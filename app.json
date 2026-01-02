@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "yasla",
+    "slug": "yasla",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.yasla.yasla",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "This app requires access to your location to provide salon services nearby.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "We use your location to show relevant nearby salons and improve your experience.",
+        "NSCameraUsageDescription": "We need camera access so you can take photos for your profile or salon services.",
+        "NSPhotoLibraryUsageDescription": "We need photo library access so you can upload images from your device."
+      }
+    },
+    "android": {
+      "versionCode": 6,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.priya_test.yasla",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "FOREGROUND_SERVICE",
+        "INTERNET"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": ""
+    },
+    "extra": {
+      "eas": {
+        "projectId": "bd4bd346-2988-4334-a689-bcd8ecd575bc"
+      }
+    },
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}
