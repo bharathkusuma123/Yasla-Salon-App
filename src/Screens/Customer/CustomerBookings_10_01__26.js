@@ -3412,93 +3412,58 @@ const CustomerBookings = () => {
   }, [bookings]);
 
   // Function to make phone call
- // Function to make phone call
-const makeCall = (phoneNumber) => {
-  if (!phoneNumber || phoneNumber.trim() === '') {
-    Alert.alert("Phone Not Available", "Stylist phone number is not available");
-    return;
-  }
-  
-  // Clean the phone number - remove all non-digit characters except '+'
-  const cleanPhone = phoneNumber.replace(/[^\d+]/g, '');
-  
-  if (cleanPhone.length < 10) {
-    Alert.alert("Invalid Phone", "The phone number is not valid");
-    return;
-  }
-  
-  const url = `tel:${cleanPhone}`;
-  Linking.canOpenURL(url)
-    .then((supported) => {
-      if (!supported) {
-        Alert.alert('Error', 'Calling not supported on this device');
-      } else {
-        return Linking.openURL(url);
-      }
-    })
-    .catch((err) => {
-      console.error('Error:', err);
-      Alert.alert('Error', 'Failed to make call');
-    });
-};
-
-// Function to open WhatsApp
-const openWhatsApp = (phoneNumber) => {
-  if (!phoneNumber || phoneNumber.trim() === '') {
-    Alert.alert("Phone Not Available", "Stylist phone number is not available");
-    return;
-  }
-  
-  // Remove any non-digit characters except '+' from phone number
-  const cleanPhone = phoneNumber.replace(/[^\d+]/g, '');
-  
-  // If it starts with '+', use as is, otherwise add country code
-  let whatsappNumber = cleanPhone;
-  if (!whatsappNumber.startsWith('+')) {
-    if (whatsappNumber.startsWith('0')) {
-      whatsappNumber = whatsappNumber.substring(1);
+  const makeCall = (phoneNumber) => {
+    if (!phoneNumber) {
+      Alert.alert("Error", "Phone number not available for this salon");
+      return;
     }
-    // Assuming Indian numbers - add +91 country code
-    whatsappNumber = `+91${whatsappNumber}`;
-  }
-  
-  const url = `https://wa.me/${whatsappNumber}`;
-  
-  Linking.openURL(url).catch(err => {
-    console.error('Error opening WhatsApp:', err);
-    Alert.alert("Error", "WhatsApp is not installed or couldn't be opened");
-  });
-};
+    
+    const url = `tel:${phoneNumber}`;
+    Linking.canOpenURL(url)
+      .then((supported) => {
+        if (!supported) {
+          Alert.alert('Error', 'Calling not supported on this device');
+        } else {
+          return Linking.openURL(url);
+        }
+      })
+      .catch((err) => {
+        console.error('Error:', err);
+        Alert.alert('Error', 'Failed to make call');
+      });
+  };
 
-  // Function to open maps
-  // Function to open maps
-const openMaps = (latitude, longitude, salonName) => {
-  if (!latitude || !longitude || latitude === null || longitude === null) {
-    Alert.alert("Location Not Available", "Salon location coordinates are not available");
-    return;
-  }
-  
-  // Encode the salon name for URL
-  const encodedSalonName = encodeURIComponent(salonName || 'Salon');
-  const url = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}&query_place_id=${encodedSalonName}`;
-  
-  Linking.canOpenURL(url)
-    .then(supported => {
-      if (supported) {
-        return Linking.openURL(url);
-      } else {
-        // Fallback to just coordinates if Google Maps fails
-        const fallbackUrl = `geo:${latitude},${longitude}`;
-        return Linking.openURL(fallbackUrl);
-      }
-    })
-    .catch(err => {
-      console.error('Error opening maps:', err);
-      Alert.alert("Error", "Could not open maps application");
+  // Function to open WhatsApp
+  const openWhatsApp = (phoneNumber) => {
+    if (!phoneNumber) {
+      Alert.alert("Error", "Phone number not available for this salon");
+      return;
+    }
+    
+    // Remove any non-digit characters from phone number
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    const url = `https://wa.me/${cleanPhone}`;
+    
+    Linking.openURL(url).catch(err => {
+      console.error('Error opening WhatsApp:', err);
+      Alert.alert("Error", "WhatsApp is not installed or couldn't be opened");
     });
-};
+  };
 
-  
+  // Function to open maps
+  const openMaps = (latitude, longitude, salonName) => {
+    if (!latitude || !longitude) {
+      Alert.alert("Error", "Location coordinates not available for this salon");
+      return;
+    }
+    
+    const url = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}&query_place_id=${salonName}`;
+    Linking.openURL(url).catch(err => {
+      console.error('Error opening maps:', err);
+      Alert.alert("Error", "Could not open maps");
+    });
+  };
+
   const fetchAppointments = async (isPullToRefresh = false) => {
     try {
       if (isPullToRefresh) {
@@ -3526,22 +3491,11 @@ const openMaps = (latitude, longitude, salonName) => {
           ? salonsResponse.data
           : [salonsResponse.data].filter(Boolean);
 
-      // FIXED: Include all three roles - Stylist, Stylist/Admin, and Admin
       const allUsers = Array.isArray(usersResponse.data?.data)
-        ? usersResponse.data.data.filter((user) => 
-            user.user_role === 'Stylist' || 
-            user.user_role === 'Stylist/Admin' || 
-            user.user_role === 'Admin'
-          )
+        ? usersResponse.data.data.filter((user) => user.user_role === 'Stylist')
         : Array.isArray(usersResponse.data)
-          ? usersResponse.data.filter((user) => 
-              user.user_role === 'Stylist' || 
-              user.user_role === 'Stylist/Admin' || 
-              user.user_role === 'Admin'
-            )
-          : (usersResponse.data?.user_role === 'Stylist' || 
-             usersResponse.data?.user_role === 'Stylist/Admin' || 
-             usersResponse.data?.user_role === 'Admin')
+          ? usersResponse.data.filter((user) => user.user_role === 'Stylist')
+          : usersResponse.data?.user_role === 'Stylist'
             ? [usersResponse.data]
             : [];
 
@@ -3558,76 +3512,103 @@ const openMaps = (latitude, longitude, salonName) => {
       }, {});
 
       const stylistMap = allUsers.reduce((map, user) => {
-        if (user && user.id) {
-          map[user.id] = {
-            ...user,
-            // Ensure phone number is available
-            phone: user.phone || user.mobile || user.phone_number || '',
-            // Ensure full_name is available
-            full_name: user.full_name || user.name || `Admin ${user.id}`
-          };
-        }
+        if (user && user.id) map[user.id] = user;
         return map;
       }, {});
 
+      // const transformedBookings = appointmentsResponse.data.map((appointment) => {
+      //   const services = appointment.appointment_services || [];
+      //   const serviceNames = services
+      //     .map((service) => service.service_name || `Service ${service.service || ''}`)
+      //     .join(', ');
+
+      //   const totalBillAmount = services.reduce((total, service) => {
+      //     return total + (parseFloat(service.price) || 0);
+      //   }, 0);
+
+      //   const salon = salonMap[appointment.salon];
+      //   const stylist = stylistMap[appointment.stylist];
+
+      //   return {
+      //     id: appointment.id.toString(),
+      //     salon: salon?.salon_name || `Salon ${appointment.salon}`,
+      //     salonId: appointment.salon,
+      //     services: services,
+      //     service: serviceNames,
+      //     serviceCount: services.length,
+      //     serviceId: services.length > 0 ? services[0].service : null,
+      //     stylist: stylist?.full_name || `Stylist ${appointment.stylist}`,
+      //     stylistId: appointment.stylist,
+      //     date: appointment.start_datetime,
+      //     timeslot: moment(appointment.start_datetime).format('h:mm A'),
+      //     graceTime: moment(appointment.start_datetime).add(15, 'minutes').format('h:mm A'),
+      //     booking_time: appointment.created_at,
+      //     bill_amount: parseFloat(appointment.bill_amount) || totalBillAmount,
+      //     status: appointment.status,
+      //     payment_status: appointment.payment_status,
+      //     payment_mode: appointment.payment_mode,
+      //     location: salon
+      //       ? `${salon.street_address || ''}, ${salon.locality || ''}, ${salon.city || ''}`.trim()
+      //       : 'Location not available',
+      //     appointmentData: appointment,
+      //     updated_at: appointment.updated_at,
+      //     // Include contact details directly in booking object
+      //     SalonPhoneNumber: salon?.phoneNumber || '',
+      //     SalonLatitude: salon?.latitude || null,
+      //     SalonLongitude: salon?.longitude || null,
+      //     city: salon?.city || '',
+      //     payment_verified: appointment.payment_verified || false,
+      //   };
+      // });
+
+
       const transformedBookings = appointmentsResponse.data.map((appointment) => {
-        const services = appointment.appointment_services || [];
-        const serviceNames = services
-          .map((service) => service.service_name || `Service ${service.service || ''}`)
-          .join(', ');
+  const services = appointment.appointment_services || [];
+  const serviceNames = services
+    .map((service) => service.service_name || `Service ${service.service || ''}`)
+    .join(', ');
 
-        const totalBillAmount = services.reduce((total, service) => {
-          return total + (parseFloat(service.price) || 0);
-        }, 0);
+  const totalBillAmount = services.reduce((total, service) => {
+    return total + (parseFloat(service.price) || 0);
+  }, 0);
 
-        const salon = salonMap[appointment.salon];
-        const stylist = stylistMap[appointment.stylist];
+  const salon = salonMap[appointment.salon];
+  const stylist = stylistMap[appointment.stylist];
 
-        // FIXED: Get stylist details with better fallbacks
-        const stylistFullName = stylist?.full_name?.trim() || 
-                              stylist?.name?.trim() || 
-                              stylist?.email?.split('@')[0] || // Use part of email as fallback
-                              `Stylist ${appointment.stylist}`;
-        
-        const stylistPhone = stylist?.phone?.trim() || 
-                           stylist?.mobile?.trim() || 
-                           stylist?.phone_number?.trim() || '';
-
-        return {
-          id: appointment.id.toString(),
-          salon: salon?.salon_name || `Salon ${appointment.salon}`,
-          salonId: appointment.salon,
-          services: services,
-          service: serviceNames,
-          serviceCount: services.length,
-          serviceId: services.length > 0 ? services[0].service : null,
-          stylist: stylistFullName, // Use the fixed full name
-          stylistId: appointment.stylist,
-          date: appointment.start_datetime,
-          timeslot: moment(appointment.start_datetime).format('h:mm A'),
-          graceTime: moment(appointment.start_datetime).add(15, 'minutes').format('h:mm A'),
-          booking_time: appointment.created_at,
-          bill_amount: parseFloat(appointment.bill_amount) || totalBillAmount,
-          status: appointment.status,
-          payment_status: appointment.payment_status,
-          payment_mode: appointment.payment_mode,
-          location: salon
-            ? `${salon.street_address || ''}, ${salon.locality || ''}, ${salon.city || ''}`.trim()
-            : 'Location not available',
-          appointmentData: appointment,
-          updated_at: appointment.updated_at,
-          
-          // Use stylist's phone if available, otherwise fall back to salon's phone
-          stylistPhoneNumber: stylistPhone || salon?.phoneNumber || '',
-          
-          // Keep salon location details for maps
-          SalonLatitude: salon?.latitude || null,
-          SalonLongitude: salon?.longitude || null,
-          city: salon?.city || '',
-          payment_verified: appointment.payment_verified || false,
-        };
-      });
-
+  return {
+    id: appointment.id.toString(),
+    salon: salon?.salon_name || `Salon ${appointment.salon}`,
+    salonId: appointment.salon,
+    services: services,
+    service: serviceNames,
+    serviceCount: services.length,
+    serviceId: services.length > 0 ? services[0].service : null,
+    stylist: stylist?.full_name || `Stylist ${appointment.stylist}`,
+    stylistId: appointment.stylist,
+    date: appointment.start_datetime,
+    timeslot: moment(appointment.start_datetime).format('h:mm A'),
+    graceTime: moment(appointment.start_datetime).add(15, 'minutes').format('h:mm A'),
+    booking_time: appointment.created_at,
+    bill_amount: parseFloat(appointment.bill_amount) || totalBillAmount,
+    status: appointment.status,
+    payment_status: appointment.payment_status,
+    payment_mode: appointment.payment_mode,
+    location: salon
+      ? `${salon.street_address || ''}, ${salon.locality || ''}, ${salon.city || ''}`.trim()
+      : 'Location not available',
+    appointmentData: appointment,
+    updated_at: appointment.updated_at,
+    
+    // ✅ UPDATED: Get phone from stylist using stylist ID
+    stylistPhoneNumber: stylist?.phone || '', // Changed from SalonPhoneNumber to stylistPhoneNumber
+    
+    // Keep salon location details for maps
+    SalonLatitude: salon?.latitude || null,
+    SalonLongitude: salon?.longitude || null,
+    city: salon?.city || '',
+    payment_verified: appointment.payment_verified || false,
+  };
+});
       const sortedBookings = transformedBookings.sort(
         (a, b) => new Date(b.updated_at) - new Date(a.updated_at)
       );
